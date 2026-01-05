@@ -5,6 +5,7 @@ export const RelativeContainer = styled.div`
   position: relative; 
   width: min-content;
   margin: auto;
+  margin-top: 20px;
 `
 
 export const AbsoluteContainer = styled.div`

@@ -4,6 +4,7 @@ import styled from "styled-components"
 
 const NavBar = styled.nav`
   background-color: #333;
+  height: 50px;
   padding: 15px;
   display: flex;
   justify-content: flex-end;
@@ -35,6 +36,7 @@ export default function Header() {
       <StyledLink to="/" end>Home</StyledLink>
       <StyledLink to="/about">About</StyledLink>
       <StyledLink to="/workout">Workout</StyledLink>
+      <StyledLink to="/blue">Blue</StyledLink>
     </NavBar>
   )
 }

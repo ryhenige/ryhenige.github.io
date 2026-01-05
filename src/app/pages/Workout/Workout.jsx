@@ -3,12 +3,14 @@ import Itinerary from './Itinerary'
 import { WeekSpinner, WeekDay, Arrows, RelativeContainer } from './components/StyledComponents'
 import { FaChevronLeft, FaChevronRight } from 'react-icons/fa'
 
+import { useDocumentTitle } from '../../../hooks/useDocumentTitle'
 import Routine from './components/Routine'
 import Stopwatch from './components/Stopwatch'
 
 const weekdays = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"]
 
 export default function Workout() {
+  useDocumentTitle('Workout')
   const d = new Date()
   const [day, setDay] = useState(d.getDay())
 
