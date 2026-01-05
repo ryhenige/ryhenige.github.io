@@ -2,6 +2,7 @@ import styled from "styled-components"
 
 // room page
 export const SceneContainer = styled.div`
+  position: relative;
   width: 100vw;
   height: calc(100vh - 50px);
   margin: 0;
@@ -9,4 +10,5 @@ export const SceneContainer = styled.div`
   display: flex;
   justify-content: center;
   align-items: center;
+  background: #000;
 `

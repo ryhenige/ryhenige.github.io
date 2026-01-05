@@ -1,7 +1,7 @@
 import { useState } from 'react';
 
 const API_BASE = window.location.hostname.includes("localhost")
-  ? "http://localhost:8080"
+  ? "http://localhost:5022"
   : "https://your-blue-server.fly.dev";
 
 export function useAuth() {

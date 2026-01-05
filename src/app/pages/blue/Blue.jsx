@@ -1,8 +1,8 @@
 import { useState } from 'react';
-import Login from './pages/Login';
-import BlueScene from './pages/BlueScene';
+import Login from './Login';
+import Scene from './Scene';
 
-export default function GameApp() {
+export default function Blue() {
   const [authData, setAuthData] = useState(null);
 
   const handleLoginSuccess = (data) => {
@@ -18,7 +18,7 @@ export default function GameApp() {
   }
 
   return (
-    <BlueScene 
+    <Scene 
       token={authData.token} 
       playerId={authData.playerId}
       onLogout={handleLogout}

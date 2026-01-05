@@ -9,4 +9,5 @@ export default defineConfig({
       usePolling: true, // Forces Vite to detect changes
     },
   },
+  allowedHosts: ["localhost:5022"],
 });

@@ -1,16 +1,17 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import useWebSocket from "react-use-websocket";
 
 const SERVER_URL = window.location.hostname.includes("localhost")
-  ? "ws://localhost:8080/ws"
+  ? "ws://localhost:5022/ws"
   : "wss://your-blue-server.fly.dev/ws";
 
 export function useWebSocketChannel(token) {
   const [messages, setMessages] = useState([]);
   const [playerId, setPlayerId] = useState(null);
   const [connected, setConnected] = useState(false);
+  const lastGameStateRef = useRef(null);
 
-  const { sendJsonMessage, lastJsonMessage, readyState } = useWebSocket(
+  const { sendJsonMessage, lastJsonMessage, readyState, getWebSocket } = useWebSocket(
     token ? `${SERVER_URL}?token=${token}` : null,
     {
       shouldReconnect: () => true,
@@ -25,10 +26,13 @@ export function useWebSocketChannel(token) {
     if (lastJsonMessage !== null) {
       if (lastJsonMessage.type === "player_assigned") {
         setPlayerId(lastJsonMessage.playerId);
-      } else if (lastJsonMessage.type === "world_update") {
-        setMessages((prev) => [...prev, lastJsonMessage]);
       } else if (lastJsonMessage.type === "game_state") {
-        setMessages((prev) => [...prev, lastJsonMessage]);
+        // Only update if game state actually changed
+        const currentGameState = JSON.stringify(lastJsonMessage.players);
+        if (lastGameStateRef.current !== currentGameState) {
+          lastGameStateRef.current = currentGameState;
+          setMessages([lastJsonMessage]); // Keep only latest state
+        }
       }
     }
   }, [lastJsonMessage]);
@@ -39,5 +43,12 @@ export function useWebSocketChannel(token) {
     }
   };
 
-  return { messages, sendMessage, playerId, connected, readyState };
+  const disconnect = () => {
+    const websocket = getWebSocket();
+    if (websocket) {
+      websocket.close();
+    }
+  };
+
+  return { messages, sendMessage, playerId, connected, readyState, disconnect };
 }
