@@ -51,7 +51,7 @@ export function useUdpConnection(token, playerId) {
       // Send HELLO message with ticket
       const sendHello = async () => {
         try {
-          const response = await fetch(`http://${window.location.hostname.includes("localhost") ? "localhost:5022" : "https://blue.fly.dev"}/api/udp-ticket`, {
+          const response = await fetch(`http://${window.location.hostname.includes("localhost") ? "localhost:5022" : "blue.fly.dev"}/api/udp-ticket`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
