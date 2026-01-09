@@ -7,6 +7,7 @@ const SERVER_URL = window.location.hostname.includes("localhost")
 
 export function useUdpConnection(token, playerId) {
   const [tickNumber, setTickNumber] = useState(0);
+  const [snapshot, setSnapshot] = useState(null);
   const lastMessageRef = useRef(null);
 
   // Use WebSocket for UDP proxy since WebRTC requires complex signaling
@@ -38,6 +39,7 @@ export function useUdpConnection(token, playerId) {
         } else if (messageType === 3) { // Snapshot message
           const snapshot = JSON.parse(json);
           setTickNumber(snapshot.tickNumber);
+          setSnapshot(snapshot);
           console.log('Received snapshot via UDP proxy:', snapshot);
         }
       } catch (error) {
@@ -110,5 +112,5 @@ export function useUdpConnection(token, playerId) {
     }
   };
 
-  return { connected, tickNumber, sendPosition };
+  return { connected, tickNumber, snapshot, sendPosition };
 }

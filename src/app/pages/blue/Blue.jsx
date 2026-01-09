@@ -1,20 +1,20 @@
-import { useState } from 'react';
-import Login from './Login';
-import Scene from './Scene';
+import { useState } from 'react'
+import Login from './Login'
+import Scene from './Scene'
 
 export default function Blue() {
-  const [authData, setAuthData] = useState(null);
+  const [authData, setAuthData] = useState(null)
 
   const handleLoginSuccess = (data) => {
-    setAuthData(data);
-  };
+    setAuthData(data)
+  }
 
   const handleLogout = () => {
-    setAuthData(null);
-  };
+    setAuthData(null)
+  }
 
   if (!authData) {
-    return <Login onLoginSuccess={handleLoginSuccess} />;
+    return <Login onLoginSuccess={handleLoginSuccess} />
   }
 
   return (
@@ -23,5 +23,5 @@ export default function Blue() {
       playerId={authData.playerId}
       onLogout={handleLogout}
     />
-  );
+  )
 }

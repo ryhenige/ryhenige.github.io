@@ -1,0 +1,57 @@
+
+import { useState } from 'react'
+import KeyboardInput from '../hooks/KeyboardInput'
+import { useRef, useEffect } from 'react'
+
+export default function Player({ position, color, isCurrentPlayer, onPositionChange }) {
+  const meshRef = useRef()
+  const keyboardInput = KeyboardInput()
+  const [localPosition, setLocalPosition] = useState(position || [0, 0, 0])
+  
+  // Update local position when server position changes (only for non-current players)
+  useEffect(() => {
+    if (!isCurrentPlayer && position) {
+      setLocalPosition(position)
+    }
+  }, [position, isCurrentPlayer])
+
+  // Update position when prop changes
+  useEffect(() => {
+    if (meshRef.current && localPosition) {
+      meshRef.current.position.set(...localPosition)
+    }
+  }, [localPosition])
+
+  // Handle keyboard movement for current player
+  useEffect(() => {
+    if (!isCurrentPlayer) return;
+    const { w, a, s, d } = keyboardInput
+
+    const moveSpeed = 1;
+    const newPosition = [...localPosition]
+
+    if (w) newPosition[1] += moveSpeed // Move up (Y)
+    if (s) newPosition[1] -= moveSpeed // Move down (Y)
+    if (a) newPosition[0] -= moveSpeed // Move left (X)
+    if (d) newPosition[0] += moveSpeed // Move right (X)
+
+    // Clamp position to bounds
+    newPosition[0] = Math.max(-5, Math.min(5, newPosition[0]))
+    newPosition[1] = Math.max(-5, Math.min(5, newPosition[1]))
+
+    // Update position if keys are pressed
+    if (w || a || s || d) {
+      setLocalPosition(newPosition)
+      onPositionChange(newPosition)
+    }
+  }, [keyboardInput, isCurrentPlayer, onPositionChange])
+  
+  return (
+    <mesh ref={meshRef} position={localPosition}>
+      <boxGeometry args={[1, 1, 1]} />
+      <meshStandardMaterial 
+        color={isCurrentPlayer ? 'cyan' : (color || 'blue')} 
+      />
+    </mesh>
+  );
+}
