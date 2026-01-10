@@ -99,6 +99,7 @@ export function useUdpConnection(token, playerId) {
     }
   }, [lastMessage]);
 
+  // Handle binary messages (JSON format with caching optimization)
   useEffect(() => {
     if (lastBinaryMessage !== null && lastBinaryMessage !== undefined && lastBinaryMessage !== lastMessageRef.current) {
       lastMessageRef.current = lastBinaryMessage;
