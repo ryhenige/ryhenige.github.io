@@ -12,7 +12,7 @@ const StatusOverlay = styled.div`
 `
 
 export default function Status({ currentPlayer, udpConnected, snapshot, messages }) {
-  console.log(currentPlayer)
+  // console.log(currentPlayer)
   return (
     <StatusOverlay>
     <div>Player ID: {currentPlayer?.id}</div>

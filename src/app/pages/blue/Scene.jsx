@@ -38,7 +38,7 @@ export default function Scene({ token, playerId, onLogout }) {
         <pointLight position={[10, 10, 10]} />
         <World 
           snapshot={snapshot} 
-          playerId={playerId} 
+          currentPlayer={currentPlayer}
           onPlayerPositionChange={handlePlayerPositionChange} 
         />
       </Canvas>
