@@ -7,11 +7,11 @@ import World from './sceneComponents/World'
 import Status from './sceneComponents/ui/Status'
 import Logout from './sceneComponents/ui/Logout'
 
-export default function Scene({ token, playerId, onLogout }) {
+export default function Scene({ token, playerId: initialPlayerId, onLogout }) {
   useDocumentTitle('Blue')
-  const { connected: udpConnected, snapshot, sendPosition, disconnect: udpDisconnect } = useUdpConnection(token, playerId)
+  const { connected: udpConnected, snapshot, sendPosition, disconnect: udpDisconnect, playerId: serverPlayerId } = useUdpConnection(token, initialPlayerId)
 
-  const currentPlayer = useMemo(() => snapshot?.players?.find(player => player.id === playerId), [snapshot, playerId])
+  const currentPlayer = useMemo(() => snapshot?.players?.find(player => player.id === serverPlayerId), [snapshot, serverPlayerId])
 
   const handlePlayerPositionChange = (position) => {
     const [x, y, z] = position

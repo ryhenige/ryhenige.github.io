@@ -7,7 +7,6 @@ import PlayerShell from './users/PlayerShell'
 export default function World({ snapshot = [], currentPlayer, onPlayerPositionChange }) {
 
   const players = useMemo(() => snapshot?.players || [], [snapshot])
-  // console.log(players)
   
   return (
     <>
