@@ -1,46 +1,126 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import useWebSocket from 'react-use-websocket';
 
 const SERVER_URL = window.location.hostname.includes("localhost")
   ? "ws://localhost:5022"
   : "wss://blue.fly.dev";
 
+// Global connection cache to prevent duplicate connections
+const connectionCache = new Map();
+
 export function useUdpConnection(token, playerId) {
   const [tickNumber, setTickNumber] = useState(0);
   const [snapshot, setSnapshot] = useState(null);
   const lastMessageRef = useRef(null);
+  const instanceId = useRef(Math.random().toString(36).substr(2, 9));
+
+  // Create a stable URL that doesn't change on re-renders
+  const webSocketUrl = useMemo(() => {
+    const url = token && playerId ? `${SERVER_URL}/udp-proxy?playerId=${playerId}` : null
+    return url
+  }, [token, playerId])
+
+  // Check if we already have a connection for this playerId
+  const existingConnection = connectionCache.get(playerId)
+  
+  // Always create connection if we don't have one, never pass null to close it
+  const shouldCreateConnection = webSocketUrl && !existingConnection
+  const shouldMaintainConnection = existingConnection && webSocketUrl
 
   // Use WebSocket for UDP proxy since WebRTC requires complex signaling
-  const { sendJsonMessage, lastBinaryMessage, readyState, getWebSocket } = useWebSocket(
-    token && playerId ? `${SERVER_URL}/udp-proxy?playerId=${playerId}` : null,
+  const { sendJsonMessage, lastBinaryMessage, lastMessage, readyState, getWebSocket } = useWebSocket(
+    shouldCreateConnection ? webSocketUrl : (shouldMaintainConnection ? webSocketUrl : null),
     {
       shouldReconnect: () => true,
+      onOpen: () => {
+        if (playerId && !connectionCache.has(playerId)) {
+          connectionCache.set(playerId, true);
+        }
+      },
+      onClose: () => {
+        // Don't immediately remove from cache, let it timeout
+        setTimeout(() => {
+          if (connectionCache.get(playerId) === true) {
+            connectionCache.delete(playerId);
+          }
+        }, 5000);
+      },
+      onError: (event) => {
+        console.log(`[${instanceId.current}] UDP WebSocket ERROR for playerId:`, playerId, event);
+      }
     }
   );
 
   const connected = readyState === 1;
 
+  // Handle JSON messages (fallback if server sends JSON instead of binary)
   useEffect(() => {
-    if (lastBinaryMessage !== null && lastBinaryMessage !== lastMessageRef.current) {
+    if (lastMessage !== null) {
+      
+      // Check if it's a Blob (binary data)
+      if (lastMessage.data instanceof Blob) {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const arrayBuffer = reader.result;
+          const data = new Uint8Array(arrayBuffer);
+          
+          // Process as binary message
+          if (data.length > 0) {
+            const messageType = data[0];
+            const messageData = data.slice(1);
+            const json = new TextDecoder().decode(messageData);
+                        
+            if (messageType === 2) { // Welcome message
+              const welcome = JSON.parse(json);
+              setTickNumber(welcome.tickNumber);
+            } else if (messageType === 3) { // Snapshot message
+              const snapshot = JSON.parse(json);
+              setTickNumber(snapshot.tickNumber);
+              setSnapshot(snapshot);
+            }
+          }
+        };
+        reader.readAsArrayBuffer(lastMessage.data);
+      } else {
+        // Handle as JSON text
+        try {
+          const data = JSON.parse(lastMessage.data);
+          
+          if (data.type === 'snapshot') {
+            setTickNumber(data.tickNumber);
+            setSnapshot(data);
+          } else if (data.type === 'welcome') {
+            setTickNumber(data.tickNumber);
+          }
+        } catch (error) {
+          console.error('Error parsing JSON message:', error);
+        }
+      }
+    }
+  }, [lastMessage]);
+
+  useEffect(() => {
+    if (lastBinaryMessage !== null && lastBinaryMessage !== undefined && lastBinaryMessage !== lastMessageRef.current) {
       lastMessageRef.current = lastBinaryMessage;
       
       try {
         const data = new Uint8Array(lastBinaryMessage);
-        if (data.length === 0) return;
 
+        if (data.length === 0) {
+          return;
+        }
+        
         const messageType = data[0];
         const messageData = data.slice(1);
         const json = new TextDecoder().decode(messageData);
-        
+                
         if (messageType === 2) { // Welcome message
           const welcome = JSON.parse(json);
           setTickNumber(welcome.tickNumber);
-          console.log('Received welcome via UDP proxy:', welcome);
         } else if (messageType === 3) { // Snapshot message
           const snapshot = JSON.parse(json);
           setTickNumber(snapshot.tickNumber);
           setSnapshot(snapshot);
-          console.log('Received snapshot via UDP proxy:', snapshot);
         }
       } catch (error) {
         console.error('Error parsing UDP proxy message:', error);
@@ -112,5 +192,12 @@ export function useUdpConnection(token, playerId) {
     }
   };
 
-  return { connected, tickNumber, snapshot, sendPosition };
+  const disconnect = () => {
+    const websocket = getWebSocket();
+    if (websocket) {
+      websocket.close();
+    }
+  };
+
+  return { connected, tickNumber, snapshot, sendPosition, disconnect };
 }

@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 
-export default function KeyboardInput() {
+export default function useKeyboardInput() {
   const [keys, setKeys] = useState({
     w: false,
     a: false,

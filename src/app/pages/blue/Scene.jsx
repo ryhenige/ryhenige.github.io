@@ -1,8 +1,7 @@
+import { useMemo } from 'react'
 import { Canvas } from '@react-three/fiber'
-import { useWebSocketChannel } from './hooks/useWebSocketChannel'
 import { useUdpConnection } from './hooks/useUdpConnection'
 import { useDocumentTitle } from '../../../hooks/useDocumentTitle'
-
 import { SceneContainer } from './components/StyledComponents'
 import World from './sceneComponents/World'
 import Status from './sceneComponents/ui/Status'
@@ -10,8 +9,9 @@ import Logout from './sceneComponents/ui/Logout'
 
 export default function Scene({ token, playerId, onLogout }) {
   useDocumentTitle('Blue')
-  const { connected, messages, disconnect } = useWebSocketChannel(token)
-  const { connected: udpConnected, snapshot, sendPosition } = useUdpConnection(token, playerId)
+  const { connected: udpConnected, snapshot, sendPosition, disconnect: udpDisconnect } = useUdpConnection(token, playerId)
+
+  const currentPlayer = useMemo(() => snapshot?.players?.find(player => player.id === playerId), [snapshot, playerId])
 
   const handlePlayerPositionChange = (position) => {
     const [x, y, z] = position
@@ -22,11 +22,15 @@ export default function Scene({ token, playerId, onLogout }) {
     <SceneContainer>
       <Status 
         token={token}
-        playerId={playerId}
+        currentPlayer={currentPlayer}
+        udpConnected={udpConnected}
+        snapshot={snapshot}
+        messages={[]}
       />
       <Logout 
-        token={token}
         onLogout={onLogout}
+        udpDisconnect={udpDisconnect}
+        wsDisconnect={() => {}}
       />
       
       <Canvas camera={{ position: [0, 0, 10] }}>

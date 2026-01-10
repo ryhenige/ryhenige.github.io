@@ -1,17 +1,17 @@
 
 import { useState } from 'react'
-import KeyboardInput from '../hooks/KeyboardInput'
+import useKeyboardInput from '../hooks/useKeyboardInput'
 import { useRef, useEffect } from 'react'
 
 export default function Player({ position, color, isCurrentPlayer, onPositionChange }) {
   const meshRef = useRef()
-  const keyboardInput = KeyboardInput()
-  const [localPosition, setLocalPosition] = useState(position || [0, 0, 0])
+  const keyboardInput = useKeyboardInput()
+  const [localPosition, setLocalPosition] = useState(position ? [position.x, position.y, position.z] : [0, 0, 0])
   
   // Update local position when server position changes (only for non-current players)
   useEffect(() => {
     if (!isCurrentPlayer && position) {
-      setLocalPosition(position)
+      setLocalPosition([position.x, position.y, position.z])
     }
   }, [position, isCurrentPlayer])
 
@@ -50,7 +50,7 @@ export default function Player({ position, color, isCurrentPlayer, onPositionCha
     <mesh ref={meshRef} position={localPosition}>
       <boxGeometry args={[1, 1, 1]} />
       <meshStandardMaterial 
-        color={isCurrentPlayer ? 'cyan' : (color || 'blue')} 
+        color={color} 
       />
     </mesh>
   );

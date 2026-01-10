@@ -1,6 +1,4 @@
 import styled from 'styled-components'
-import { useWebSocketChannel } from '../../hooks/useWebSocketChannel'
-import { useUdpConnection } from '../../hooks/useUdpConnection'
 
 const StatusOverlay = styled.div`
   position: absolute;
@@ -13,17 +11,14 @@ const StatusOverlay = styled.div`
   border-radius: 5px;
 `
 
-export default function Status({ token, playerId }) {
-  const { connected, messages } = useWebSocketChannel(token)
-  const { connected: udpConnected, snapshot } = useUdpConnection(token, playerId)
-
+export default function Status({ currentPlayer, udpConnected, snapshot, messages }) {
+  console.log(currentPlayer)
   return (
     <StatusOverlay>
-    <div>Player ID: {playerId}</div>
-    <div>WS Connected: {connected ? 'Yes' : 'No'}</div>
+    <div>Player ID: {currentPlayer?.id}</div>
+    <div>Color: {currentPlayer?.color}</div>
     <div>UDP Connected: {udpConnected ? 'Yes' : 'No'}</div>
-    <div>Players: {snapshot?.players?.length > 0 ? snapshot.players.length : (playerId ? 1 : 0)}</div>
-    <div>Messages: {messages.length}</div>
+    <div>Players: {snapshot?.players?.length || 0}</div>
     </StatusOverlay>
   )
 }

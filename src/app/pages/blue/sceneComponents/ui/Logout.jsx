@@ -1,6 +1,4 @@
 import styled from 'styled-components'
-import { useWebSocketChannel } from '../../hooks/useWebSocketChannel'
-
 
 const LogoutButton = styled.button`
   position: absolute;
@@ -20,11 +18,10 @@ const LogoutButton = styled.button`
   }
 `
 
-export default function Logout({token, onLogout }) {
-  const { disconnect } = useWebSocketChannel(token)
-
+export default function Logout({ onLogout, udpDisconnect, wsDisconnect }) {
   const handleLogout = () => {
-    disconnect()
+    wsDisconnect()
+    udpDisconnect()
     onLogout()
   }
 
