@@ -5,6 +5,83 @@ const SERVER_URL = window.location.hostname.includes("localhost")
   ? "ws://localhost:5022"
   : "wss://blue.fly.dev";
 
+// Parse binary snapshot from server's SerializeSnapshotBinary format
+function parseBinarySnapshot(data) {
+  try {
+    let offset = 0;
+    
+    // Helper function to read little-endian values
+    const readInt64 = (buffer, offset) => {
+      const view = new DataView(buffer, offset, 8);
+      return view.getBigUint64(0, true);
+    };
+    
+    const readInt32 = (buffer, offset) => {
+      const view = new DataView(buffer, offset, 4);
+      return view.getInt32(0, true);
+    };
+    
+    const readFloat32 = (buffer, offset) => {
+      const view = new DataView(buffer, offset, 4);
+      return view.getFloat32(0, true);
+    };
+    
+    // Read header
+    const tickNumber = Number(readInt64(data.buffer, data.byteOffset + offset));
+    offset += 8;
+    
+    const playerCount = readInt32(data.buffer, data.byteOffset + offset);
+    offset += 4;
+    
+    const players = [];
+    
+    for (let i = 0; i < playerCount; i++) {
+      // Read player ID
+      const idLength = readInt32(data.buffer, data.byteOffset + offset);
+      offset += 4;
+      const idBytes = new Uint8Array(data.buffer, data.byteOffset + offset, idLength);
+      const playerId = new TextDecoder().decode(idBytes);
+      offset += idLength;
+      
+      // Read position (4 floats)
+      const x = readFloat32(data.buffer, data.byteOffset + offset);
+      offset += 4;
+      const y = readFloat32(data.buffer, data.byteOffset + offset);
+      offset += 4;
+      const z = readFloat32(data.buffer, data.byteOffset + offset);
+      offset += 4;
+      const rotationY = readFloat32(data.buffer, data.byteOffset + offset);
+      offset += 4;
+      
+      // Read color
+      const colorLength = readInt32(data.buffer, data.byteOffset + offset);
+      offset += 4;
+      const colorBytes = new Uint8Array(data.buffer, data.byteOffset + offset, colorLength);
+      const color = new TextDecoder().decode(colorBytes);
+      offset += colorLength;
+      
+      // Read last update (8 bytes)
+      const lastUpdate = Number(readInt64(data.buffer, data.byteOffset + offset));
+      offset += 8;
+      
+      players.push({
+        id: playerId,
+        position: { x, y, z, rotationY },
+        color,
+        lastUpdate: new Date(lastUpdate)
+      });
+    }
+    
+    return {
+      tickNumber,
+      players
+    };
+  } catch (error) {
+    console.error('Error parsing binary snapshot:', error);
+    return null;
+  }
+}
+
 // Global connection cache to prevent duplicate connections
 const connectionCache = new Map();
 
@@ -68,15 +145,17 @@ export function useUdpConnection(token, playerId) {
           if (data.length > 0) {
             const messageType = data[0];
             const messageData = data.slice(1);
-            const json = new TextDecoder().decode(messageData);
                         
             if (messageType === 2) { // Welcome message
+              const json = new TextDecoder().decode(messageData);
               const welcome = JSON.parse(json);
               setTickNumber(welcome.tickNumber);
-            } else if (messageType === 3) { // Snapshot message
-              const snapshot = JSON.parse(json);
-              setTickNumber(snapshot.tickNumber);
-              setSnapshot(snapshot);
+            } else if (messageType === 3) { // Snapshot message (binary format)
+              const snapshot = parseBinarySnapshot(messageData);
+              if (snapshot) {
+                setTickNumber(snapshot.tickNumber);
+                setSnapshot(snapshot);
+              }
             }
           }
         };
@@ -99,7 +178,7 @@ export function useUdpConnection(token, playerId) {
     }
   }, [lastMessage]);
 
-  // Handle binary messages (JSON format with caching optimization)
+  // Handle binary messages (binary format for snapshots)
   useEffect(() => {
     if (lastBinaryMessage !== null && lastBinaryMessage !== undefined && lastBinaryMessage !== lastMessageRef.current) {
       lastMessageRef.current = lastBinaryMessage;
@@ -112,16 +191,19 @@ export function useUdpConnection(token, playerId) {
         }
         
         const messageType = data[0];
-        const messageData = data.slice(1);
-        const json = new TextDecoder().decode(messageData);
-                
+        
         if (messageType === 2) { // Welcome message
+          const messageData = data.slice(1);
+          const json = new TextDecoder().decode(messageData);
           const welcome = JSON.parse(json);
           setTickNumber(welcome.tickNumber);
-        } else if (messageType === 3) { // Snapshot message
-          const snapshot = JSON.parse(json);
-          setTickNumber(snapshot.tickNumber);
-          setSnapshot(snapshot);
+        } else if (messageType === 3) { // Snapshot message (binary format)
+          const messageData = data.slice(1);
+          const snapshot = parseBinarySnapshot(messageData);
+          if (snapshot) {
+            setTickNumber(snapshot.tickNumber);
+            setSnapshot(snapshot);
+          }
         }
       } catch (error) {
         console.error('Error parsing UDP proxy message:', error);
